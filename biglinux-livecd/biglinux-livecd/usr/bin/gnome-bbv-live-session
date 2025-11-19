@@ -1,0 +1,3 @@
+#!/bin/bash
+
+python /usr/share/biglinux/livecd/main.py
