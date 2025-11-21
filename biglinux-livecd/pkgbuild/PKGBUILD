@@ -1,14 +1,14 @@
 # Maintainer: Bruno Goncalves <bigbruno@gmail.com>
 
 pkgname=biglinux-livecd
-pkgver=$(date +%y.%m.%d)
-pkgrel=$(date +%H%M)
+pkgver=24.11.11
+pkgrel=1805
 arch=('any')
 license=('GPL')
 url="https://github.com/biglinux/biglinux-livecd"
 pkgdesc="Complete control center to use in BigLinux with KDE"
 depends=('bbv-framework' 'circle-flags' 'xorg-xdpyinfo')
-source=("git+https://github.com/biglinux/biglinux-livecd.git")
+source=("git+https://github.com/biglinux/biglinux-livecd.git#branch=stable-2024-11-11_15-02")
 md5sums=(SKIP)
 install=${pkgname}.install
 
@@ -34,3 +34,4 @@ package() {
         cp -r "${InternalDir}/opt" "${pkgdir}/"
     fi
 }
+

@@ -44,7 +44,7 @@ Enabled=false' >> ~/.config/kwalletrc
 fi
 
 # Verify cmdline biglinux.bootcmd
-eval "kernel_args=( $(</proc/cmdline) )"
+eval "kernel_args=( $(cat /proc/cmdline) )"
 for arg in "${kernel_args[@]}" ; do
     case "$arg" in
         biglinux.bootcmd=*)
@@ -54,6 +54,12 @@ for arg in "${kernel_args[@]}" ; do
     esac
 done
 
+# Manage the biglinux-dual-gpu-manager-after-display-manager service
+cd /usr/share/bigbashview/apps/livecd/
+if systemctl -q is-enabled biglinux-dual-gpu-manager-after-display-manager; then
+    sudo systemctl start biglinux-dual-gpu-manager-after-display-manager 2>&1 &
+fi
+
 # Apply theme
 if [[ -e /usr/share/sync-kde-and-gtk-places/sync-gnome-theme-to-qt.sh ]]; then
     /usr/share/sync-kde-and-gtk-places/sync-gnome-theme-to-qt.sh
@@ -61,38 +67,24 @@ fi
 
 # Environment settings for QT and run bigbashview
 if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-        systemctl --user start plasma-kglobalaccel.service
-        python /usr/share/biglinux/livecd/main.py
+        bigbashview -c black -t qt -s $(LANG=C xdpyinfo  | grep 'dimensions:' | sed 's|.*dimensions:||g;s| pixels.*||g') localization.html
 else
     if [[ $display_manager == "sddm" ]]; then
-        export DESKTOP_SESSION=KDE
-        export XDG_SESSION_DESKTOP=KDE
-        export QT_QPA_PLATFORMTHEME=kvantum
-        export GDMSESSION=KDE
-        export XDG_CURRENT_DESKTOP=KDE
-        export QT_SCALE_FACTOR_ROUNDING_POLICY=RoundPreferFloor
-        systemctl --user start plasma-kglobalaccel.service
-        dbus-run-session kwin_wayland --drm --no-lockscreen --xwayland 'python /usr/share/biglinux/livecd/main.py'
+        QT_SCALE_FACTOR_ROUNDING_POLICY=RoundPreferFloor kwin_wayland --drm --no-lockscreen --locale1 --exit-with-session '/usr/bin/bigbashview -w fullscreen -c black -t qt -d /usr/share/bigbashview/apps/livecd localization.html'
     elif [[ $display_manager == "gdm" ]]; then
-        export DESKTOP_SESSION=gnome
-        export XDG_SESSION_DESKTOP=gnome
-        export QT_QPA_PLATFORMTHEME=kvantum
-        export GDMSESSION=gnome
-        export XDG_CURRENT_DESKTOP=gnome
-        export QT_SCALE_FACTOR_ROUNDING_POLICY=RoundPreferFloor
-        mutter --wayland /usr/bin/gnome-bbv-live-session
+        QT_SCALE_FACTOR_ROUNDING_POLICY=RoundPreferFloor mutter --wayland /usr/bin/gnome-bbv-live-session
     fi
 fi
 
 wait
 
 # Language and theme settings
-export LANGUAGE=$(</tmp/big_language).UTF-8
-export LANG=$(</tmp/big_language).UTF-8
-export LC_MESSAGES=$(</tmp/big_language).UTF-8
-export LC_ALL=$(</tmp/big_language).UTF-8
-echo "$(</tmp/big_language)" > $HOME/.config/user-dirs.locale
-echo -e "[Formats]\nLANG=$(</tmp/big_language).UTF-8" > $HOME/.config/plasma-localerc
+export LANGUAGE=$(cat /tmp/big_language).UTF-8
+export LANG=$(cat /tmp/big_language).UTF-8
+export LC_MESSAGES=$(cat /tmp/big_language).UTF-8
+export LC_ALL=$(cat /tmp/big_language).UTF-8
+echo "$(cat /tmp/big_language)" > $HOME/.config/user-dirs.locale
+echo -e "[Formats]\nLANG=$(cat /tmp/big_language).UTF-8" > $HOME/.config/plasma-localerc
 
 # Make folders in home
 xdg-user-dirs-update
@@ -103,10 +95,7 @@ chmod +x "$XDG_DESKTOP_DIR/calamares-biglinux.desktop"
 cd ~
 
 # Checks if the display manager is GDM and removes unwanted files.
-if grep -iq 'BigCommunity-Core.iso' /proc/cmdline; then
-    sudo calamares_polkit
-
-elif [[ $display_manager == "gdm" ]]; then
+if [[ $display_manager == "gdm" ]]; then
     # Removes unwanted files
     rm -f "$HOME/Empty Bash" "$HOME/Empty Desktop File.desktop" "$HOME/Empty File"
 
@@ -116,15 +105,12 @@ elif [[ $display_manager == "gdm" ]]; then
     # Start Gnome
     /usr/bin/gnome-session
 
-elif [[ -e /usr/share/wayland-sessions/hyprland.desktop ]]; then
-    Hyprland
-elif [[ $display_manager == "sddm" || $display_manager == "lxdm" ]]; then
+    elif [[ $display_manager == "sddm" || $display_manager == "lxdm" ]]; then
     if [[ "$XDG_SESSION_TYPE" == "x11" ]]; then
         startkde-biglinux
     else
         startkde-biglinux wayland
     fi
-
 elif [[ -e /usr/share/xsessions/xfce.desktop ]]; then
     export XDG_MENU_PREFIX=xfce-
     export DESKTOP_SESSION=xfce
@@ -133,7 +119,6 @@ elif [[ -e /usr/share/xsessions/xfce.desktop ]]; then
     export GDMSESSION=xfce
     export XDG_CURRENT_DESKTOP=XFCE
     startxfce4
-
 elif [[ -e /usr/bin/cinnamon-session-cinnamon ]]; then
     export DESKTOP_SESSION=cinnamon
     export XDG_SESSION_DESKTOP=cinnamon

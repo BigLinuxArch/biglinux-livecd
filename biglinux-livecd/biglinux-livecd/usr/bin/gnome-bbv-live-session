@@ -1,3 +1,4 @@
 #!/bin/bash
 
-python /usr/share/biglinux/livecd/main.py
+cd /usr/share/bigbashview/apps/livecd
+/usr/bin/bigbashview -w fullscreen -c black -t qt localization.html
